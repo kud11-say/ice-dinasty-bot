@@ -9,7 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN, ADMIN_ID
 from database import init_db
 
-from handlers import registration, menu, collection, profile, team, packs, matches, season, admin
+from handlers import registration, menu, collection, profile, team, packs, matches, season, admin, story
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
@@ -58,7 +58,6 @@ async def cmd_start(message: Message, state):
 
 @dp.message(Command("menu"))
 async def cmd_menu_direct(message: Message):
-    logger.info(f"🎯 /menu получен от {message.from_user.id}")
     await menu.cmd_menu(message)
 
 
@@ -125,7 +124,8 @@ async def btn_team(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data == "menu_matches")
 async def btn_matches(callback: types.CallbackQuery):
-    await menu.menu_matches(callback)
+    from handlers.matches import show_matches
+    await show_matches(callback)
 
 
 @dp.callback_query(lambda c: c.data == "menu_season")
@@ -136,11 +136,6 @@ async def btn_season(callback: types.CallbackQuery):
 @dp.callback_query(lambda c: c.data == "menu_shop")
 async def btn_shop(callback: types.CallbackQuery):
     await menu.menu_shop(callback)
-
-
-@dp.callback_query(lambda c: c.data == "menu_packs")
-async def btn_packs(callback: types.CallbackQuery):
-    await menu.menu_packs(callback)
 
 
 @dp.callback_query(lambda c: c.data == "menu_settings")
@@ -157,7 +152,7 @@ async def generate_cards_background():
         else:
             logger.info("✅ Карточки уже в базе")
     except Exception as e:
-        logger.error(f"⚠️ Ошибка генерации карточек: {e}")
+        logger.error(f"⚠️ Ошибка генерации: {e}")
 
 
 async def main():
@@ -171,12 +166,12 @@ async def main():
     packs.register_handlers(dp)
     matches.register_handlers(dp)
     admin.register_handlers(dp)
+    story.register_handlers(dp)
 
     await bot.delete_webhook(drop_pending_updates=True)
-
     asyncio.create_task(generate_cards_background())
 
-    logger.info("✅ Бот запущен. Ожидаю сообщения...")
+    logger.info("✅ Бот запущен.")
     await dp.start_polling(bot, polling_timeout=60)
 
 
