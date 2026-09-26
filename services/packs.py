@@ -2,17 +2,14 @@ import random
 from sqlalchemy import select, func
 from database import async_session
 from models import Card, UserCard, User
-from services.card_service import format_card_short
 
 
 PACKS = {
-    "bronze": {"name": "Бронзовый", "price": 1000, "cards": 3, "emoji": "🥉", "min_rarity": 0},
-    "silver": {"name": "Серебряный", "price": 5000, "cards": 5, "emoji": "🥈", "min_rarity": 1},
-    "gold": {"name": "Золотой", "price": 15000, "cards": 5, "emoji": "🥇", "min_rarity": 2},
-    "elite": {"name": "Элитный", "price": 50000, "cards": 3, "emoji": "💎", "min_rarity": 3},
+    "bronze": {"name": "Бронзовый", "price": 1000, "cards": 3, "emoji": "🥉", "min_ovr": 65},
+    "silver": {"name": "Серебряный", "price": 5000, "cards": 5, "emoji": "🥈", "min_ovr": 72},
+    "gold": {"name": "Золотой", "price": 15000, "cards": 5, "emoji": "🥇", "min_ovr": 78},
+    "elite": {"name": "Элитный", "price": 50000, "cards": 3, "emoji": "💎", "min_ovr": 85},
 }
-
-RARITY_ORDER = {"bronze": 0, "silver": 1, "gold": 2, "elite": 3, "legend": 4, "icon": 5}
 
 
 async def open_pack(user_id: int, pack_key: str) -> dict:
@@ -30,26 +27,26 @@ async def open_pack(user_id: int, pack_key: str) -> dict:
 
         user.coins -= pack["price"]
 
-        # Выбор карт
         cards_got = []
-        min_r = pack["min_rarity"]
-        # Гарантия — 1 карта с min_rarity или выше
-        result = await session.execute(
-            select(Card).where(Card.ovr >= 72 + min_r * 8).order_by(func.random()).limit(1)
+
+        # Гарантированная карта нужного уровня
+        r = await session.execute(
+            select(Card).where(Card.ovr >= pack["min_ovr"])
+            .order_by(func.random()).limit(1)
         )
-        guarantee = result.scalar_one_or_none()
+        guarantee = r.scalar_one_or_none()
         if guarantee:
             cards_got.append(guarantee)
 
+        # Остальные — случайные
         for _ in range(pack["cards"] - 1):
-            result = await session.execute(select(Card).order_by(func.random()).limit(1))
-            c = result.scalar_one_or_none()
-            if c:
+            r = await session.execute(select(Card).order_by(func.random()).limit(1))
+            c = r.scalar_one_or_none()
+            if c and c.id not in [x.id for x in cards_got]:
                 cards_got.append(c)
 
         for card in cards_got:
             session.add(UserCard(user_id=user_id, card_id=card.id))
 
         await session.commit()
-
         return {"cards": cards_got, "price": pack["price"]}
