@@ -5,6 +5,7 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import BOT_TOKEN, ADMIN_ID
+from database import init_db
 
 logging.basicConfig(
     level=logging.INFO,
@@ -93,7 +94,8 @@ async def cmd_admin(message: Message):
         "─────────────────────\n\n"
         "✅ Бот работает.\n"
         "✅ Переменные загружены.\n"
-        "✅ Админ-доступ подтверждён.\n\n"
+        "✅ Админ-доступ подтверждён.\n"
+        "✅ База данных подключена.\n\n"
         f"Ваш ID: {message.from_user.id}"
     )
 
@@ -101,6 +103,12 @@ async def cmd_admin(message: Message):
 async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     logger.info(f"Админ ID: {ADMIN_ID}")
+    
+    # Инициализация базы данных
+    logger.info("🗄️ Инициализация базы данных...")
+    await init_db()
+    logger.info("✅ База данных готова.")
+    
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("✅ Бот запущен. Ожидаю сообщения...")
     await dp.start_polling(bot)
