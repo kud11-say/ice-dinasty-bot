@@ -27,7 +27,7 @@ def format_card_short(card) -> str:
     return f"{rarity} {pos} {card.name} ({card.ovr})"
 
 
-def format_card_full(card, stars=0, form="normal", injury=0) -> str:
+def format_card_full(card, stars: int = 0, form: str = "normal", injury: int = 0) -> str:
     rarity = RARITY_EMOJI.get(card.rarity, "❓")
     label = RARITY_LABEL.get(card.rarity, "?")
     pos = POSITION_EMOJI.get(card.position, "🏒")
@@ -36,7 +36,6 @@ def format_card_full(card, stars=0, form="normal", injury=0) -> str:
     form_em = FORM_EMOJI.get(form, "🙂")
     club_em = club_emoji(card.club or "")
     flag = COUNTRY_FLAG.get(card.country, "🏳️")
-
     line = "━━━━━━━━━━━━━━━━━━━━━━"
 
     text = (
@@ -57,35 +56,56 @@ def format_card_full(card, stars=0, form="normal", injury=0) -> str:
         f"{flag} {card.country}\n"
         f"🏒 {card.league}  •  {club_em} {card.club}\n"
         f"🎭 Роль: {role}\n"
-        f"{stars_str}  {form_em}\n"
+        f"{stars_str}  {form_em}"
     )
     if injury > 0:
-        text += f"🩹 Травма: {injury} матчей\n"
-    text += line
+        text += f"\n🩹 Травма: {injury} матчей"
+    text += f"\n{line}"
     return text
 
 
 async def give_starter_pack(user_id: int) -> list:
+    """Выдать стартовый пак из 6 карточек."""
     async with async_session() as session:
         cards = []
-        # Капитан ЦН
-        r = await session.execute(select(Card).where(Card.position == "ЦН", Card.ovr >= 78, Card.ovr <= 85).order_by(func.random()).limit(1))
+
+        # 1. Капитан — ЦН 78–85
+        r = await session.execute(
+            select(Card).where(Card.position == "ЦН", Card.ovr >= 78, Card.ovr <= 85)
+            .order_by(func.random()).limit(1)
+        )
         c = r.scalar_one_or_none()
         if c: cards.append(c)
-        # Два крайних
-        r = await session.execute(select(Card).where(Card.position.in_(["ЛП", "ПП"]), Card.ovr >= 68, Card.ovr <= 78).order_by(func.random()).limit(2))
+
+        # 2. Второй ЦН (для 2-го звена) 68–78
+        r = await session.execute(
+            select(Card).where(Card.position == "ЦН", Card.ovr >= 68, Card.ovr <= 78)
+            .order_by(func.random()).limit(1)
+        )
+        c = r.scalar_one_or_none()
+        if c: cards.append(c)
+
+        # 3–4. Два крайних нападающих
+        r = await session.execute(
+            select(Card).where(Card.position.in_(["ЛП", "ПП"]), Card.ovr >= 68, Card.ovr <= 80)
+            .order_by(func.random()).limit(2)
+        )
         for c in r.scalars().all():
             cards.append(c)
-        # Защитник
-        r = await session.execute(select(Card).where(Card.position == "З", Card.ovr >= 68, Card.ovr <= 78).order_by(func.random()).limit(1))
+
+        # 5. Защитник
+        r = await session.execute(
+            select(Card).where(Card.position == "З", Card.ovr >= 68, Card.ovr <= 80)
+            .order_by(func.random()).limit(1)
+        )
         c = r.scalar_one_or_none()
         if c: cards.append(c)
-        # Вратарь
-        r = await session.execute(select(Card).where(Card.position == "В", Card.ovr >= 65, Card.ovr <= 78).order_by(func.random()).limit(1))
-        c = r.scalar_one_or_none()
-        if c: cards.append(c)
-        # Второй ЦН для 2-го звена
-        r = await session.execute(select(Card).where(Card.position == "ЦН", Card.ovr >= 68, Card.ovr <= 78).order_by(func.random()).limit(1))
+
+        # 6. Вратарь
+        r = await session.execute(
+            select(Card).where(Card.position == "В", Card.ovr >= 65, Card.ovr <= 80)
+            .order_by(func.random()).limit(1)
+        )
         c = r.scalar_one_or_none()
         if c: cards.append(c)
 
