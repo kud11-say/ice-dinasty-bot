@@ -98,16 +98,16 @@ async def back_to_start(callback: types.CallbackQuery):
     )
     await callback.answer()
 
+
 @dp.callback_query(lambda c: c.data == "start_career")
 async def start_career(callback: types.CallbackQuery, state):
     await registration.start_registration(callback.from_user.id, callback.message, state)
     await callback.answer()
 
 
-
 @dp.callback_query(lambda c: c.data == "continue_game")
 async def continue_game(callback: types.CallbackQuery):
-    await menu.cmd_menu(callback.message)
+    await menu.render_menu(callback.from_user.id, callback.message, edit=True)
     await callback.answer()
 
 
@@ -126,6 +126,7 @@ async def cmd_admin(message: Message):
         f"Ваш ID: {message.from_user.id}"
     )
 
+
 async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     logger.info(f"Админ ID: {ADMIN_ID}")
@@ -134,10 +135,14 @@ async def main():
     await init_db()
     logger.info("✅ База данных готова.")
     
-    from services.card_generator import generate_cards_if_empty
-    logger.info("🃏 Проверка базы карточек...")
-    await generate_cards_if_empty()
-    logger.info("✅ База карточек готова.")
+    # Генерация карточек (если база пуста)
+    try:
+        from services.card_generator import generate_cards_if_empty
+        logger.info("🃏 Проверка базы карточек...")
+        await generate_cards_if_empty()
+        logger.info("✅ База карточек готова.")
+    except Exception as e:
+        logger.error(f"⚠️ Ошибка генерации карточек: {e}")
     
     registration.register_handlers(dp)
     menu.register_handlers(dp)
