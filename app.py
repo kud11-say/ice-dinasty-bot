@@ -9,14 +9,22 @@ from aiogram.client.default import DefaultBotProperties
 from config import BOT_TOKEN, ADMIN_ID
 from database import init_db
 
-from handlers import registration, menu, collection, profile, team, packs, matches, season, admin, story
+from handlers import (
+    registration, menu, collection, profile, team,
+    packs, matches, season, admin, story
+)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=None))
 dp = Dispatcher(storage=MemoryStorage())
 
+
+# ─── СТАРТ ──────────────────────────────────────────
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state):
@@ -30,8 +38,10 @@ async def cmd_start(message: Message, state):
 
     if user and user.is_registered:
         text = (
-            "🏒 ICE DYNASTY\n─────────────────────\n\n"
-            f"С возвращением, {user.name}!\n\nПродолжим?"
+            "🏒  ICE DYNASTY\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"С возвращением, {user.name}!\n\n"
+            "Продолжим?"
         )
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="▶️ Продолжить", callback_data="continue_game")],
@@ -41,12 +51,14 @@ async def cmd_start(message: Message, state):
         return
 
     text = (
-        "🏒 ICE DYNASTY\n─────────────────────\n\n"
+        "🏒  ICE DYNASTY\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"Привет, {message.from_user.first_name}!\n\n"
         "Добро пожаловать в игру, где ты станешь "
         "генеральным менеджером хоккейного клуба.\n\n"
         "Собирай команду, играй матчи, "
         "проходи сюжет и строй династию.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
         "Готов начать карьеру?"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -56,44 +68,14 @@ async def cmd_start(message: Message, state):
     await message.answer(text, reply_markup=keyboard)
 
 
+# ─── /menu ──────────────────────────────────────────
+
 @dp.message(Command("menu"))
 async def cmd_menu_direct(message: Message):
     await menu.cmd_menu(message)
 
 
-@dp.callback_query(lambda c: c.data == "about_game")
-async def about_game(callback: types.CallbackQuery):
-    text = (
-        "📖 ЧТО ТАКОЕ ICE DYNASTY?\n─────────────────────\n\n"
-        "Это текстовая игра про хоккей.\nТы — генеральный менеджер клуба.\n\n"
-        "Твоя задача:\n• Найти игроков\n• Собрать состав\n• Выиграть Кубок\n\n"
-        "Игра идёт по сезонам.\nЭто бесплатно. Это навсегда."
-    )
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎬 Начать", callback_data="start_career")],
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_start")],
-    ])
-    await callback.message.edit_text(text, reply_markup=keyboard)
-    await callback.answer()
-
-
-@dp.callback_query(lambda c: c.data == "back_to_start")
-async def back_to_start(callback: types.CallbackQuery):
-    await callback.message.edit_text(
-        "🏒 ICE DYNASTY\n─────────────────────\n\nГотов начать карьеру?",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🎬 Начать", callback_data="start_career")],
-            [InlineKeyboardButton(text="📖 Что это за игра?", callback_data="about_game")],
-        ])
-    )
-    await callback.answer()
-
-
-@dp.callback_query(lambda c: c.data == "start_career")
-async def start_career(callback: types.CallbackQuery, state):
-    await registration.start_registration(callback.from_user.id, callback.message, state)
-    await callback.answer()
-
+# ─── ГЛАВНОЕ МЕНЮ ──────────────────────────────────
 
 @dp.callback_query(lambda c: c.data == "continue_game")
 async def continue_game(callback: types.CallbackQuery):
@@ -106,6 +88,53 @@ async def back_to_menu(callback: types.CallbackQuery):
     await menu.render_menu(callback.from_user.id, callback.message, edit=True)
     await callback.answer()
 
+
+@dp.callback_query(lambda c: c.data == "about_game")
+async def about_game(callback: types.CallbackQuery):
+    text = (
+        "📖  ЧТО ТАКОЕ ICE DYNASTY?\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Это текстовая игра про хоккей.\n"
+        "Ты — генеральный менеджер клуба.\n\n"
+        "Твоя задача:\n"
+        "• Найти игроков\n"
+        "• Собрать состав\n"
+        "• Выиграть Кубок\n\n"
+        "Игра идёт по сезонам.\n"
+        "Один сезон = одна глава сюжета.\n\n"
+        "Это бесплатно. Это навсегда."
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎬 Начать", callback_data="start_career")],
+        [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_start")],
+    ])
+    await callback.message.edit_text(text, reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query(lambda c: c.data == "back_to_start")
+async def back_to_start(callback: types.CallbackQuery):
+    await callback.message.edit_text(
+        "🏒  ICE DYNASTY\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "Готов начать карьеру?",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🎬 Начать", callback_data="start_career")],
+            [InlineKeyboardButton(text="📖 Что это за игра?", callback_data="about_game")],
+        ])
+    )
+    await callback.answer()
+
+
+# ─── РЕГИСТРАЦИЯ ────────────────────────────────────
+
+@dp.callback_query(lambda c: c.data == "start_career")
+async def start_career(callback: types.CallbackQuery, state):
+    await registration.start_registration(callback.from_user.id, callback.message, state)
+    await callback.answer()
+
+
+# ─── КНОПКИ МЕНЮ ────────────────────────────────────
 
 @dp.callback_query(lambda c: c.data == "menu_profile")
 async def btn_profile(callback: types.CallbackQuery):
@@ -138,10 +167,18 @@ async def btn_shop(callback: types.CallbackQuery):
     await menu.menu_shop(callback)
 
 
+@dp.callback_query(lambda c: c.data == "menu_story")
+async def btn_story(callback: types.CallbackQuery):
+    from handlers.story import show_story
+    await show_story(callback)
+
+
 @dp.callback_query(lambda c: c.data == "menu_settings")
 async def btn_settings(callback: types.CallbackQuery):
     await menu.menu_settings(callback)
 
+
+# ─── ФОНОВАЯ ГЕНЕРАЦИЯ КАРТОЧЕК ────────────────────
 
 async def generate_cards_background():
     try:
@@ -152,14 +189,17 @@ async def generate_cards_background():
         else:
             logger.info("✅ Карточки уже в базе")
     except Exception as e:
-        logger.error(f"⚠️ Ошибка генерации: {e}")
+        logger.error(f"⚠️ Ошибка генерации карточек: {e}")
 
+
+# ─── MAIN ───────────────────────────────────────────
 
 async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     await init_db()
     logger.info("✅ База данных готова.")
 
+    # Регистрация хендлеров
     registration.register_handlers(dp)
     collection.register_handlers(dp)
     team.register_handlers(dp)
@@ -171,7 +211,7 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     asyncio.create_task(generate_cards_background())
 
-    logger.info("✅ Бот запущен.")
+    logger.info("✅ Бот запущен. Ожидаю сообщения...")
     await dp.start_polling(bot, polling_timeout=60)
 
 
