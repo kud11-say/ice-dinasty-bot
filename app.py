@@ -132,8 +132,13 @@ async def main():
     logger.info(f"Админ ID: {ADMIN_ID}")
     
     logger.info("🗄️ Инициализация базы данных...")
-    await init_db()
-    logger.info("✅ База данных готова.")
+await init_db()
+logger.info("✅ База данных готова.")
+
+from services.card_generator import generate_cards_if_empty
+logger.info("🃏 Проверка базы карточек...")
+await generate_cards_if_empty()
+logger.info("✅ База карточек готова.")
     
     # Регистрируем обработчики
     registration.register_handlers(dp)
