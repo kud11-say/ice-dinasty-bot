@@ -48,7 +48,8 @@ async def menu_profile(callback: CallbackQuery):
 
 
 async def menu_collection(callback: CallbackQuery):
-    await callback.answer("🃏 Коллекция — скоро!", show_alert=True)
+    from handlers.collection import show_collection
+    await show_collection(callback)
 
 
 async def menu_team(callback: CallbackQuery):
