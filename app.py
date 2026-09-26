@@ -149,9 +149,9 @@ registration.register_handlers(dp)
 menu.register_handlers(dp)
 collection.register_handlers(dp)
     
-    await bot.delete_webhook(drop_pending_updates=True)
-    logger.info("✅ Бот запущен. Ожидаю сообщения...")
-    await dp.start_polling(bot)
+        await bot.delete_webhook(drop_pending_updates=True)
+        logger.info("✅ Бот запущен. Ожидаю сообщения...")
+        await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
