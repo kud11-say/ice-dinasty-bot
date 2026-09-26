@@ -1,5 +1,4 @@
 from aiogram import types, F
-from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, CallbackQuery
@@ -43,26 +42,22 @@ CLUBS = {
 
 
 def get_data(user_id: int) -> dict:
-    """Безопасно получить данные регистрации."""
     if user_id not in TEMP_DATA:
         TEMP_DATA[user_id] = {}
     return TEMP_DATA[user_id]
 
 
 async def start_registration(user_id: int, message: Message, state: FSMContext):
-    """Начало регистрации. Принимает ID пользователя явно."""
-    
-    # Проверяем, не зарегистрирован ли уже
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if user and user.is_registered:
             await message.answer("Ты уже зарегистрирован! Используй /menu.")
             return
-    
+
     TEMP_DATA[user_id] = {}
     await state.set_state(Registration.name)
-    
+
     await message.answer(
         "📝 РЕГИСТРАЦИЯ • 1/5\n"
         "─────────────────────\n\n"
@@ -75,20 +70,20 @@ async def start_registration(user_id: int, message: Message, state: FSMContext):
 
 
 async def process_name(message: Message, state: FSMContext):
-    name = message.text.strip()
-    
+    name = message.text.strip() if message.text else ""
+
     if len(name) < 3 or len(name) > 20:
         await message.answer("⚠️ Имя должно быть от 3 до 20 символов. Попробуй ещё:")
         return
-    
+
     if not all(c.isalnum() or c in " -_" for c in name):
         await message.answer("⚠️ Только буквы, цифры, пробел, дефис и подчёркивание. Попробуй ещё:")
         return
-    
+
     user_id = message.from_user.id
     get_data(user_id)["name"] = name
     await state.set_state(Registration.age)
-    
+
     await message.answer(
         "📝 РЕГИСТРАЦИЯ • 2/5\n"
         "─────────────────────\n\n"
@@ -105,7 +100,7 @@ async def process_age(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     get_data(user_id)["age"] = age
     await state.set_state(Registration.origin)
-    
+
     await callback.message.edit_text(
         "📝 РЕГИСТРАЦИЯ • 3/5\n"
         "─────────────────────\n\n"
@@ -121,7 +116,7 @@ async def process_origin(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     get_data(user_id)["origin"] = origin_key
     await state.set_state(Registration.club)
-    
+
     await callback.message.edit_text(
         "📝 РЕГИСТРАЦИЯ • 4/5\n"
         "─────────────────────\n\n"
@@ -145,7 +140,7 @@ async def process_club(callback: CallbackQuery, state: FSMContext):
     club = CLUBS[club_key]
     user_id = callback.from_user.id
     get_data(user_id)["club"] = club_key
-    
+
     await callback.message.edit_text(
         f"✅ Ты выбрал «{club['name']}»\n"
         "─────────────────────\n\n"
@@ -186,7 +181,7 @@ async def confirm_club(callback: CallbackQuery, state: FSMContext):
 
 
 async def process_slogan(message: Message, state: FSMContext):
-    slogan = message.text.strip()[:30]
+    slogan = message.text.strip()[:30] if message.text else "Мы — одна команда"
     user_id = message.from_user.id
     get_data(user_id)["slogan"] = slogan
     await show_confirmation(message, user_id, edit=False)
@@ -201,13 +196,13 @@ async def skip_slogan(callback: CallbackQuery, state: FSMContext):
 
 async def show_confirmation(message: Message, user_id: int, edit: bool = False):
     data = get_data(user_id)
-    
+
     if "name" not in data or "club" not in data:
         await message.answer("⚠️ Что-то пошло не так. Начни заново: /start")
         return
-    
+
     club = CLUBS[data["club"]]
-    
+
     text = (
         "🎉 РЕГИСТРАЦИЯ ЗАВЕРШЕНА\n"
         "─────────────────────\n\n"
@@ -220,47 +215,72 @@ async def show_confirmation(message: Message, user_id: int, edit: bool = False):
         "💰 5000 монет\n"
         "💎 10 рубинов\n"
         "⚡ 20 / 20 энергии\n"
-        "🃏 1 бронзовый пак\n\n"
+        "🃏 Стартовый пак (5 карточек)\n\n"
         "Готов начать карьеру?"
     )
-    
+
     if edit:
         await message.edit_text(text, reply_markup=confirm_registration_keyboard())
     else:
         await message.answer(text, reply_markup=confirm_registration_keyboard())
 
-await session.commit()
 
-# Выдаём стартовый пак
-from services.card_service import give_starter_pack
-starter_cards = await give_starter_pack(user_id)
+async def finish_registration(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    data = TEMP_DATA.get(user_id)
 
-await state.clear()
-TEMP_DATA.pop(user_id, None)
+    if not data or "name" not in data or "club" not in data:
+        await callback.message.edit_text("⚠️ Что-то пошло не так. Начни заново: /start")
+        return
 
-# Формируем список карточек
-from handlers.collection import format_card_short
-cards_text = "\n".join([format_card_short(c) for c in starter_cards])
+    club = CLUBS[data["club"]]
 
-await callback.message.edit_text(
-    "🎬 КАБИНЕТ ДИРЕКТОРА\n"
-    "─────────────────────\n\n"
-    "Виктор Петрович Соколов смотрит "
-    "на тебя поверх очков.\n\n"
-    "«Итак. Ты — новый ГМ. Клуб в кризисе. "
-    "Бюджет — вот он. Состав — вот он.\n\n"
-    "Задача простая: выйти в плей-офф. "
-    "Или я найду другого ГМ.\n\n"
-    "Держи стартовый набор — собери "
-    "что-нибудь из этого.»\n\n"
-    "─────────────────────\n"
-    "🎁 ТЫ ПОЛУЧИЛ СТАРТОВЫЙ ПАК:\n"
-    "─────────────────────\n"
-    f"{cards_text}\n\n"
-    "─────────────────────\n"
-    "Напиши /menu, чтобы увидеть главное меню."
-)
-await callback.answer("Добро пожаловать в Ice Dynasty!")
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(id=user_id)
+            session.add(user)
+
+        user.username = callback.from_user.username
+        user.name = data["name"]
+        user.age = data.get("age", 25)
+        user.origin = data.get("origin", "player")
+        user.club = club["name"]
+        user.league = club["league"]
+        user.is_registered = True
+
+        await session.commit()
+
+    from services.card_service import give_starter_pack
+    from handlers.collection import format_card_short
+
+    starter_cards = await give_starter_pack(user_id)
+    cards_text = "\n".join([format_card_short(c) for c in starter_cards]) if starter_cards else "—"
+
+    await state.clear()
+    TEMP_DATA.pop(user_id, None)
+
+    await callback.message.edit_text(
+        "🎬 КАБИНЕТ ДИРЕКТОРА\n"
+        "─────────────────────\n\n"
+        "Виктор Петрович Соколов смотрит "
+        "на тебя поверх очков.\n\n"
+        "«Итак. Ты — новый ГМ. Клуб в кризисе. "
+        "Бюджет — вот он. Состав — вот он.\n\n"
+        "Задача простая: выйти в плей-офф. "
+        "Или я найду другого ГМ.\n\n"
+        "Держи стартовый набор — собери "
+        "что-нибудь из этого.»\n\n"
+        "─────────────────────\n"
+        "🎁 ТЫ ПОЛУЧИЛ СТАРТОВЫЙ ПАК:\n"
+        "─────────────────────\n"
+        f"{cards_text}\n\n"
+        "─────────────────────\n"
+        "Напиши /menu, чтобы увидеть главное меню."
+    )
+    await callback.answer("Добро пожаловать в Ice Dynasty!")
 
 
 async def restart_registration(callback: CallbackQuery, state: FSMContext):
