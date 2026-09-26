@@ -1,4 +1,4 @@
-from aiogram import types, F
+from aiogram import F
 from aiogram.filters import Command
 from aiogram.types import Message, CallbackQuery
 
@@ -10,11 +10,10 @@ from keyboards.main_menu import main_menu_keyboard
 
 
 async def render_menu(user_id: int, target, edit: bool = False):
-    """Показать меню. target — Message или callback.message."""
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-    
+
     if not user or not user.is_registered:
         text = "Сначала зарегистрируйся: /start"
         if edit:
@@ -22,7 +21,7 @@ async def render_menu(user_id: int, target, edit: bool = False):
         else:
             await target.answer(text)
         return
-    
+
     text = (
         "🏒 ICE DYNASTY\n"
         "─────────────────────\n"
@@ -32,7 +31,7 @@ async def render_menu(user_id: int, target, edit: bool = False):
         "─────────────────────\n"
         "Выбери раздел:"
     )
-    
+
     if edit:
         await target.edit_text(text, reply_markup=main_menu_keyboard())
     else:
@@ -44,7 +43,8 @@ async def cmd_menu(message: Message):
 
 
 async def menu_profile(callback: CallbackQuery):
-    await callback.answer("👤 Профиль — скоро!", show_alert=True)
+    from handlers.profile import show_profile
+    await show_profile(callback)
 
 
 async def menu_collection(callback: CallbackQuery):
