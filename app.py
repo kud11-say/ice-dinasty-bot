@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
@@ -56,6 +56,12 @@ async def cmd_start(message: Message, state):
     await message.answer(text, reply_markup=keyboard)
 
 
+@dp.message(Command("menu"))
+async def cmd_menu_direct(message: Message):
+    logger.info(f"🎯 /menu получен от {message.from_user.id}")
+    await menu.cmd_menu(message)
+
+
 @dp.callback_query(lambda c: c.data == "about_game")
 async def about_game(callback: types.CallbackQuery):
     text = (
@@ -102,8 +108,47 @@ async def back_to_menu(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@dp.callback_query(lambda c: c.data == "menu_profile")
+async def btn_profile(callback: types.CallbackQuery):
+    await menu.menu_profile(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_collection")
+async def btn_collection(callback: types.CallbackQuery):
+    await menu.menu_collection(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_team")
+async def btn_team(callback: types.CallbackQuery):
+    await menu.menu_team(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_matches")
+async def btn_matches(callback: types.CallbackQuery):
+    await menu.menu_matches(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_season")
+async def btn_season(callback: types.CallbackQuery):
+    await menu.menu_season(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_shop")
+async def btn_shop(callback: types.CallbackQuery):
+    await menu.menu_shop(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_packs")
+async def btn_packs(callback: types.CallbackQuery):
+    await menu.menu_packs(callback)
+
+
+@dp.callback_query(lambda c: c.data == "menu_settings")
+async def btn_settings(callback: types.CallbackQuery):
+    await menu.menu_settings(callback)
+
+
 async def generate_cards_background():
-    """Генерация карточек в фоне, чтобы не блокировать бота."""
     try:
         from services.card_generator import generate_cards_if_empty
         count = await generate_cards_if_empty()
@@ -121,7 +166,6 @@ async def main():
     logger.info("✅ База данных готова.")
 
     registration.register_handlers(dp)
-    menu.register_handlers(dp)
     collection.register_handlers(dp)
     team.register_handlers(dp)
     packs.register_handlers(dp)
@@ -130,7 +174,6 @@ async def main():
 
     await bot.delete_webhook(drop_pending_updates=True)
 
-    # Запускаем генерацию карточек в фоне
     asyncio.create_task(generate_cards_background())
 
     logger.info("✅ Бот запущен. Ожидаю сообщения...")
