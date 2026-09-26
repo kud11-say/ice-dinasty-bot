@@ -1,10 +1,13 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, DateTime, Text, ForeignKey
+from sqlalchemy import (
+    Column, Integer, String, Boolean, BigInteger, DateTime, Text, ForeignKey
+)
 from sqlalchemy.sql import func
 from database import Base
 
 
 class User(Base):
     __tablename__ = "users"
+
     id = Column(BigInteger, primary_key=True)
     username = Column(String(64), nullable=True)
     name = Column(String(32), nullable=True)
@@ -25,6 +28,7 @@ class User(Base):
     rep_board = Column(Integer, default=3)
     chapter = Column(Integer, default=1)
     day = Column(Integer, default=1)
+    story_scene = Column(String(64), default="start")
     wins = Column(Integer, default=0)
     losses = Column(Integer, default=0)
     ot_wins = Column(Integer, default=0)
@@ -37,6 +41,7 @@ class User(Base):
 
 class Card(Base):
     __tablename__ = "cards"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(64), nullable=False)
     position = Column(String(4), nullable=False)
@@ -59,6 +64,7 @@ class Card(Base):
 
 class UserCard(Base):
     __tablename__ = "user_cards"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     card_id = Column(Integer, ForeignKey("cards.id"), nullable=False)
@@ -74,6 +80,7 @@ class UserCard(Base):
 
 class Match(Base):
     __tablename__ = "matches"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     opponent = Column(String(64), nullable=False)
@@ -87,6 +94,7 @@ class Match(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     type = Column(String(32), nullable=False)
@@ -98,23 +106,8 @@ class Transaction(Base):
 
 class StoryFlag(Base):
     __tablename__ = "story_flags"
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     flag_name = Column(String(64), nullable=False)
     flag_value = Column(String(64), default="true")
-
-
-class SeasonTable(Base):
-    __tablename__ = "season_table"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
-    club = Column(String(64), nullable=False)
-    games = Column(Integer, default=0)
-    wins = Column(Integer, default=0)
-    ot_wins = Column(Integer, default=0)
-    ot_losses = Column(Integer, default=0)
-    losses = Column(Integer, default=0)
-    points = Column(Integer, default=0)
-    goals_for = Column(Integer, default=0)
-    goals_against = Column(Integer, default=0)
-    is_player = Column(Boolean, default=False)
