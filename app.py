@@ -3,9 +3,12 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN, ADMIN_ID
 from database import init_db
+
+from handlers import registration, menu
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,16 +17,39 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
+dp = Dispatcher(storage=MemoryStorage())
 
 
 @dp.message(CommandStart())
-async def cmd_start(message: Message):
-    user = message.from_user
+async def cmd_start(message: Message, state):
+    from database import async_session
+    from models import User
+    from sqlalchemy import select
+    
+    user_id = message.from_user.id
+    
+    async with async_session() as session:
+        result = await session.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+    
+    if user and user.is_registered:
+        text = (
+            "🏒 ICE DYNASTY\n"
+            "─────────────────────\n\n"
+            f"С возвращением, {user.name}!\n\n"
+            "Продолжим?"
+        )
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="▶️ Продолжить", callback_data="continue_game")],
+            [InlineKeyboardButton(text="👤 Профиль", callback_data="menu_profile")],
+        ])
+        await message.answer(text, reply_markup=keyboard)
+        return
+    
     text = (
         "🏒 ICE DYNASTY\n"
         "─────────────────────\n\n"
-        f"Привет, {user.first_name}!\n\n"
+        f"Привет, {message.from_user.first_name}!\n\n"
         "Добро пожаловать в игру, где ты станешь "
         "генеральным менеджером хоккейного клуба.\n\n"
         "Собирай команду, играй матчи, "
@@ -74,13 +100,14 @@ async def back_to_start(callback: types.CallbackQuery):
 
 
 @dp.callback_query(lambda c: c.data == "start_career")
-async def start_career(callback: types.CallbackQuery):
-    await callback.message.edit_text(
-        "🚧 РАЗДЕЛ В РАЗРАБОТКЕ\n"
-        "─────────────────────\n\n"
-        "Регистрация и онбординг появятся "
-        "в ближайшем обновлении."
-    )
+async def start_career(callback: types.CallbackQuery, state):
+    await registration.start_registration(callback.message, state)
+    await callback.answer()
+
+
+@dp.callback_query(lambda c: c.data == "continue_game")
+async def continue_game(callback: types.CallbackQuery):
+    await menu.cmd_menu(callback.message)
     await callback.answer()
 
 
@@ -104,10 +131,13 @@ async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     logger.info(f"Админ ID: {ADMIN_ID}")
     
-    # Инициализация базы данных
     logger.info("🗄️ Инициализация базы данных...")
     await init_db()
     logger.info("✅ База данных готова.")
+    
+    # Регистрируем обработчики
+    registration.register_handlers(dp)
+    menu.register_handlers(dp)
     
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("✅ Бот запущен. Ожидаю сообщения...")
