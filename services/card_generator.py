@@ -5,7 +5,6 @@ from sqlalchemy import select, func
 
 
 REAL_PLAYERS = [
-    # НХЛ
     {"name": "Сидни Кросби", "pos": "ЦН", "age": 39, "ovr": 93, "country": "Канада", "league": "NHL", "club": "Питтсбург"},
     {"name": "Александр Овечкин", "pos": "ЛП", "age": 40, "ovr": 92, "country": "Россия", "league": "NHL", "club": "Вашингтон"},
     {"name": "Евгений Малкин", "pos": "ЦН", "age": 39, "ovr": 91, "country": "Россия", "league": "NHL", "club": "Питтсбург"},
@@ -24,7 +23,6 @@ REAL_PLAYERS = [
     {"name": "Джек Айкел", "pos": "ЦН", "age": 29, "ovr": 88, "country": "США", "league": "NHL", "club": "Вегас"},
     {"name": "Марк Стоун", "pos": "ПП", "age": 33, "ovr": 89, "country": "Канада", "league": "NHL", "club": "Вегас"},
     {"name": "Ши Теодор", "pos": "З", "age": 30, "ovr": 86, "country": "Канада", "league": "NHL", "club": "Вегас"},
-    # КХЛ
     {"name": "Александр Никишин", "pos": "З", "age": 24, "ovr": 87, "country": "Россия", "league": "KHL", "club": "СКА"},
     {"name": "Иван Демидов", "pos": "ЛП", "age": 19, "ovr": 82, "country": "Россия", "league": "KHL", "club": "СКА"},
     {"name": "Арсений Грицюк", "pos": "ПП", "age": 24, "ovr": 84, "country": "Россия", "league": "KHL", "club": "СКА"},
@@ -46,7 +44,6 @@ REAL_PLAYERS = [
     {"name": "Иван Рябкин", "pos": "ЦН", "age": 19, "ovr": 79, "country": "Россия", "league": "KHL", "club": "Динамо Москва"},
     {"name": "Данис Зарипов", "pos": "ЛП", "age": 43, "ovr": 82, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
     {"name": "Александр Радулов", "pos": "ПП", "age": 39, "ovr": 85, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
-    # ВХЛ
     {"name": "Сергей Морозов", "pos": "ЦН", "age": 44, "ovr": 80, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Алексей Кузнецов", "pos": "ЦН", "age": 30, "ovr": 78, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Андрей Орлов", "pos": "З", "age": 28, "ovr": 77, "country": "Россия", "league": "VHL", "club": "Торос"},
@@ -115,42 +112,56 @@ def determine_role(stats: dict, position: str) -> str:
     return "universal"
 
 
+def build_all_cards() -> list:
+    """Собирает все карточки (в памяти)."""
+    cards_data = []
+
+    for p in REAL_PLAYERS:
+        stats = calculate_stats(p["ovr"], p["pos"])
+        cards_data.append({
+            "name": p["name"], "position": p["pos"], "age": p["age"], "ovr": p["ovr"],
+            "speed": stats["speed"], "shot": stats["shot"], "pass_": stats["pass_"],
+            "defense": stats["defense"], "physical": stats["physical"], "goalie": stats["goalie"],
+            "rarity": determine_rarity(p["ovr"]), "role": determine_role(stats, p["pos"]),
+            "country": p["country"], "league": p["league"], "club": p["club"],
+            "potential": min(99, p["ovr"] + random.randint(0, 5)),
+        })
+
+    for i in range(260):
+        first = random.choice(FIRST_NAMES)
+        last = random.choice(LAST_NAMES)
+        ovr = random.randint(55, 88)
+        pos = random.choice(POSITIONS)
+        league = random.choice(LEAGUES)
+        country = random.choice(COUNTRIES)
+        stats = calculate_stats(ovr, pos)
+        cards_data.append({
+            "name": f"{first} {last}", "position": pos, "age": random.randint(18, 36), "ovr": ovr,
+            "speed": stats["speed"], "shot": stats["shot"], "pass_": stats["pass_"],
+            "defense": stats["defense"], "physical": stats["physical"], "goalie": stats["goalie"],
+            "rarity": determine_rarity(ovr), "role": determine_role(stats, pos),
+            "country": country, "league": league, "club": random.choice(CLUBS[league]),
+            "potential": min(99, ovr + random.randint(0, 10)),
+        })
+
+    return cards_data
+
+
 async def generate_cards_if_empty():
+    """Генерирует карточки батчами по 50 штук."""
     async with async_session() as session:
         count = await session.scalar(select(func.count(Card.id)))
         if count and count > 0:
             return
 
-        cards = []
-        # Реальные
-        for p in REAL_PLAYERS:
-            stats = calculate_stats(p["ovr"], p["pos"])
-            cards.append(Card(
-                name=p["name"], position=p["pos"], age=p["age"], ovr=p["ovr"],
-                speed=stats["speed"], shot=stats["shot"], pass_=stats["pass_"],
-                defense=stats["defense"], physical=stats["physical"], goalie=stats["goalie"],
-                rarity=determine_rarity(p["ovr"]), role=determine_role(stats, p["pos"]),
-                country=p["country"], league=p["league"], club=p["club"],
-                potential=min(99, p["ovr"] + random.randint(0, 5)),
-            ))
+    all_cards = build_all_cards()
+    batch_size = 50
 
-        # Сгенерированные
-        for i in range(260):
-            first = random.choice(FIRST_NAMES)
-            last = random.choice(LAST_NAMES)
-            ovr = random.randint(55, 88)
-            pos = random.choice(POSITIONS)
-            league = random.choice(LEAGUES)
-            country = random.choice(COUNTRIES)
-            stats = calculate_stats(ovr, pos)
-            cards.append(Card(
-                name=f"{first} {last}", position=pos, age=random.randint(18, 36), ovr=ovr,
-                speed=stats["speed"], shot=stats["shot"], pass_=stats["pass_"],
-                defense=stats["defense"], physical=stats["physical"], goalie=stats["goalie"],
-                rarity=determine_rarity(ovr), role=determine_role(stats, pos),
-                country=country, league=league, club=random.choice(CLUBS[league]),
-                potential=min(99, ovr + random.randint(0, 10)),
-            ))
+    for i in range(0, len(all_cards), batch_size):
+        batch = all_cards[i:i + batch_size]
+        async with async_session() as session:
+            for data in batch:
+                session.add(Card(**data))
+            await session.commit()
 
-        session.add_all(cards)
-        await session.commit()
+    return len(all_cards)
