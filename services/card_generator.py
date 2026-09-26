@@ -5,6 +5,7 @@ from sqlalchemy import select, func
 
 
 REAL_PLAYERS = [
+    # НХЛ
     {"name": "Сидни Кросби", "pos": "ЦН", "age": 39, "ovr": 93, "country": "Канада", "league": "NHL", "club": "Питтсбург"},
     {"name": "Александр Овечкин", "pos": "ЛП", "age": 40, "ovr": 92, "country": "Россия", "league": "NHL", "club": "Вашингтон"},
     {"name": "Евгений Малкин", "pos": "ЦН", "age": 39, "ovr": 91, "country": "Россия", "league": "NHL", "club": "Питтсбург"},
@@ -23,6 +24,9 @@ REAL_PLAYERS = [
     {"name": "Джек Айкел", "pos": "ЦН", "age": 29, "ovr": 88, "country": "США", "league": "NHL", "club": "Вегас"},
     {"name": "Марк Стоун", "pos": "ПП", "age": 33, "ovr": 89, "country": "Канада", "league": "NHL", "club": "Вегас"},
     {"name": "Ши Теодор", "pos": "З", "age": 30, "ovr": 86, "country": "Канада", "league": "NHL", "club": "Вегас"},
+    {"name": "Давид Пастрняк", "pos": "ПП", "age": 29, "ovr": 94, "country": "Чехия", "league": "NHL", "club": "Бостон"},
+    {"name": "Чарли Макэвой", "pos": "З", "age": 27, "ovr": 90, "country": "США", "league": "NHL", "club": "Бостон"},
+    # КХЛ
     {"name": "Александр Никишин", "pos": "З", "age": 24, "ovr": 87, "country": "Россия", "league": "KHL", "club": "СКА"},
     {"name": "Иван Демидов", "pos": "ЛП", "age": 19, "ovr": 82, "country": "Россия", "league": "KHL", "club": "СКА"},
     {"name": "Арсений Грицюк", "pos": "ПП", "age": 24, "ovr": 84, "country": "Россия", "league": "KHL", "club": "СКА"},
@@ -33,7 +37,6 @@ REAL_PLAYERS = [
     {"name": "Дмитрий Вишневский", "pos": "З", "age": 35, "ovr": 84, "country": "Россия", "league": "KHL", "club": "Спартак"},
     {"name": "Иван Морозов", "pos": "ЦН", "age": 24, "ovr": 84, "country": "Россия", "league": "KHL", "club": "Спартак"},
     {"name": "Павел Порядин", "pos": "ПП", "age": 28, "ovr": 85, "country": "Россия", "league": "KHL", "club": "Спартак"},
-    {"name": "Никита Сусуев", "pos": "ЛП", "age": 24, "ovr": 82, "country": "Россия", "league": "KHL", "club": "Спартак"},
     {"name": "Егор Яковлев", "pos": "З", "age": 35, "ovr": 85, "country": "Россия", "league": "KHL", "club": "Металлург"},
     {"name": "Михаил Фёдоров", "pos": "ЦН", "age": 19, "ovr": 80, "country": "Россия", "league": "KHL", "club": "Металлург"},
     {"name": "Александр Сиряцкий", "pos": "З", "age": 19, "ovr": 78, "country": "Россия", "league": "KHL", "club": "Металлург"},
@@ -44,6 +47,7 @@ REAL_PLAYERS = [
     {"name": "Иван Рябкин", "pos": "ЦН", "age": 19, "ovr": 79, "country": "Россия", "league": "KHL", "club": "Динамо Москва"},
     {"name": "Данис Зарипов", "pos": "ЛП", "age": 43, "ovr": 82, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
     {"name": "Александр Радулов", "pos": "ПП", "age": 39, "ovr": 85, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
+    # ВХЛ
     {"name": "Сергей Морозов", "pos": "ЦН", "age": 44, "ovr": 80, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Алексей Кузнецов", "pos": "ЦН", "age": 30, "ovr": 78, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Андрей Орлов", "pos": "З", "age": 28, "ovr": 77, "country": "Россия", "league": "VHL", "club": "Торос"},
@@ -58,15 +62,24 @@ REAL_PLAYERS = [
     {"name": "Егор Зайцев", "pos": "В", "age": 24, "ovr": 72, "country": "Россия", "league": "VHL", "club": "АКМ"},
 ]
 
-FIRST_NAMES = ["Александр", "Сергей", "Дмитрий", "Андрей", "Алексей", "Николай", "Владимир", "Игорь", "Роман", "Павел", "Максим", "Артём", "Денис", "Егор", "Илья", "Кирилл", "Матвей", "Тимофей", "Глеб", "Савелий", "Ярослав", "Михаил", "Иван", "Пётр", "Фёдор"]
-LAST_NAMES = ["Петров", "Иванов", "Смирнов", "Кузнецов", "Попов", "Васильев", "Соколов", "Михайлов", "Новиков", "Фёдоров", "Морозов", "Волков", "Лебедев", "Семёнов", "Егоров", "Павлов", "Козлов", "Степанов", "Николаев", "Орлов", "Зайцев", "Соловьёв", "Борисов", "Яковлев", "Григорьев"]
-COUNTRIES = ["Россия", "Россия", "Россия", "Канада", "США", "Швеция", "Финляндия", "Чехия", "Словакия"]
+FIRST_NAMES = ["Александр", "Сергей", "Дмитрий", "Андрей", "Алексей", "Николай",
+               "Владимир", "Игорь", "Роман", "Павел", "Максим", "Артём",
+               "Денис", "Егор", "Илья", "Кирилл", "Матвей", "Тимофей",
+               "Глеб", "Савелий", "Ярослав", "Михаил", "Иван", "Пётр", "Фёдор"]
+LAST_NAMES = ["Петров", "Иванов", "Смирнов", "Кузнецов", "Попов", "Васильев",
+              "Соколов", "Михайлов", "Новиков", "Фёдоров", "Морозов", "Волков",
+              "Лебедев", "Семёнов", "Егоров", "Павлов", "Козлов", "Степанов",
+              "Николаев", "Орлов", "Зайцев", "Соловьёв", "Борисов", "Яковлев", "Григорьев"]
+COUNTRIES = ["Россия", "Россия", "Россия", "Канада", "США",
+             "Швеция", "Финляндия", "Чехия", "Словакия"]
 POSITIONS = ["ЦН", "ЛП", "ПП", "З", "З", "В"]
 LEAGUES = ["VHL", "KHL", "NHL"]
 CLUBS = {
-    "VHL": ["Торос", "Буран", "АКМ", "Югра", "Динамо-Алтай"],
-    "KHL": ["ЦСКА", "СКА", "Динамо Москва", "Спартак", "Ак Барс", "Авангард", "Металлург", "Трактор"],
-    "NHL": ["Питтсбург", "Вашингтон", "Тампа-Бэй", "Торонто", "Рейнджерс", "Вегас", "Даллас", "Эдмонтон"],
+    "VHL": ["Торос", "Буран", "АКМ", "Югра", "Динамо-Алтай", "Барс", "Горняк-УГМК"],
+    "KHL": ["ЦСКА", "СКА", "Динамо Москва", "Спартак", "Ак Барс",
+            "Авангард", "Металлург", "Трактор", "Автомобилист", "Торпедо"],
+    "NHL": ["Питтсбург", "Вашингтон", "Тампа-Бэй", "Торонто", "Рейнджерс",
+            "Вегас", "Даллас", "Эдмонтон", "Бостон"],
 }
 
 
@@ -113,7 +126,6 @@ def determine_role(stats: dict, position: str) -> str:
 
 
 def build_all_cards() -> list:
-    """Собирает все карточки (в памяти)."""
     cards_data = []
 
     for p in REAL_PLAYERS:
@@ -127,7 +139,7 @@ def build_all_cards() -> list:
             "potential": min(99, p["ovr"] + random.randint(0, 5)),
         })
 
-    for i in range(260):
+    for _ in range(250):
         first = random.choice(FIRST_NAMES)
         last = random.choice(LAST_NAMES)
         ovr = random.randint(55, 88)
@@ -136,7 +148,8 @@ def build_all_cards() -> list:
         country = random.choice(COUNTRIES)
         stats = calculate_stats(ovr, pos)
         cards_data.append({
-            "name": f"{first} {last}", "position": pos, "age": random.randint(18, 36), "ovr": ovr,
+            "name": f"{first} {last}", "position": pos,
+            "age": random.randint(18, 36), "ovr": ovr,
             "speed": stats["speed"], "shot": stats["shot"], "pass_": stats["pass_"],
             "defense": stats["defense"], "physical": stats["physical"], "goalie": stats["goalie"],
             "rarity": determine_rarity(ovr), "role": determine_role(stats, pos),
@@ -148,11 +161,11 @@ def build_all_cards() -> list:
 
 
 async def generate_cards_if_empty():
-    """Генерирует карточки батчами по 50 штук."""
+    """Генерация карточек батчами по 50."""
     async with async_session() as session:
         count = await session.scalar(select(func.count(Card.id)))
         if count and count > 0:
-            return
+            return 0
 
     all_cards = build_all_cards()
     batch_size = 50
