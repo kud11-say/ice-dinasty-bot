@@ -5,7 +5,6 @@ from aiogram.types import Message, CallbackQuery
 from database import async_session
 from models import User
 from sqlalchemy import select
-
 from keyboards.main_menu import main_menu_keyboard
 
 
@@ -13,7 +12,6 @@ async def render_menu(user_id: int, target, edit: bool = False):
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-
     if not user or not user.is_registered:
         text = "Сначала зарегистрируйся: /start"
         if edit:
@@ -21,17 +19,13 @@ async def render_menu(user_id: int, target, edit: bool = False):
         else:
             await target.answer(text)
         return
-
     text = (
-        "🏒 ICE DYNASTY\n"
-        "─────────────────────\n"
+        "🏒 ICE DYNASTY\n─────────────────────\n"
         f"{user.name} | ГМ «{user.club}»\n"
         f"Ур. {user.level} • 💰 {user.coins} • 💎 {user.rubies}\n"
-        f"⚡ {user.energy} / 20\n"
-        "─────────────────────\n"
+        f"⚡ {user.energy}/20\n─────────────────────\n"
         "Выбери раздел:"
     )
-
     if edit:
         await target.edit_text(text, reply_markup=main_menu_keyboard())
     else:
@@ -53,27 +47,32 @@ async def menu_collection(callback: CallbackQuery):
 
 
 async def menu_team(callback: CallbackQuery):
-    await callback.answer("🏒 Состав — скоро!", show_alert=True)
+    from handlers.team import show_team
+    await show_team(callback)
 
 
 async def menu_matches(callback: CallbackQuery):
-    await callback.answer("⚔️ Матчи — скоро!", show_alert=True)
+    from handlers.matches import show_matches
+    await show_matches(callback)
 
 
 async def menu_season(callback: CallbackQuery):
-    await callback.answer("🏆 Сезон — скоро!", show_alert=True)
+    from handlers.season import show_season
+    await show_season(callback)
 
 
 async def menu_shop(callback: CallbackQuery):
-    await callback.answer("🛒 Магазин — скоро!", show_alert=True)
+    from handlers.packs import show_packs
+    await show_packs(callback)
 
 
-async def menu_social(callback: CallbackQuery):
-    await callback.answer("👥 Социальное — скоро!", show_alert=True)
+async def menu_packs(callback: CallbackQuery):
+    from handlers.packs import show_packs
+    await show_packs(callback)
 
 
 async def menu_settings(callback: CallbackQuery):
-    await callback.answer("⚙️ Настройки — скоро!", show_alert=True)
+    await callback.answer("⚙️ Скоро!", show_alert=True)
 
 
 def register_handlers(dp):
@@ -84,5 +83,5 @@ def register_handlers(dp):
     dp.callback_query.register(menu_matches, F.data == "menu_matches")
     dp.callback_query.register(menu_season, F.data == "menu_season")
     dp.callback_query.register(menu_shop, F.data == "menu_shop")
-    dp.callback_query.register(menu_social, F.data == "menu_social")
+    dp.callback_query.register(menu_packs, F.data == "menu_packs")
     dp.callback_query.register(menu_settings, F.data == "menu_settings")
