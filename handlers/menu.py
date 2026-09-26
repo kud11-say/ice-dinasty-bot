@@ -11,34 +11,43 @@ logger = logging.getLogger(__name__)
 
 
 async def render_menu(user_id: int, target, edit: bool = False):
-    async with async_session() as session:
-        result = await session.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
+    logger.info(f"→ render_menu {user_id}")
+    try:
+        async with async_session() as session:
+            result = await session.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
 
-    if not user or not user.is_registered:
-        text = "Сначала зарегистрируйся: /start"
+        if not user or not user.is_registered:
+            text = "Сначала зарегистрируйся: /start"
+            if edit:
+                await target.edit_text(text)
+            else:
+                await target.answer(text)
+            return
+
+        club_em = club_emoji(user.club)
+        text = (
+            "🏒  ICE DYNASTY\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{club_em}  {user.name}  |  ГМ «{user.club}»\n"
+            f"Ур. {user.level}  •  💰 {user.coins}  •  💎 {user.rubies}\n"
+            f"⚡ {user.energy}/20\n"
+            f"📖 Глава {user.chapter}  •  День {user.day}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Выбери раздел:"
+        )
+
         if edit:
-            await target.edit_text(text)
+            await target.edit_text(text, reply_markup=main_menu_keyboard())
         else:
-            await target.answer(text)
-        return
-
-    club_em = club_emoji(user.club)
-    text = (
-        "🏒  ICE DYNASTY\n"
-        "━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"{club_em}  {user.name}  |  ГМ «{user.club}»\n"
-        f"Ур. {user.level}  •  💰 {user.coins}  •  💎 {user.rubies}\n"
-        f"⚡ {user.energy}/20\n"
-        f"📖 Глава {user.chapter}  •  День {user.day}\n"
-        "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "Выбери раздел:"
-    )
-
-    if edit:
-        await target.edit_text(text, reply_markup=main_menu_keyboard())
-    else:
-        await target.answer(text, reply_markup=main_menu_keyboard())
+            await target.answer(text, reply_markup=main_menu_keyboard())
+        logger.info(f"✅ Меню отправлено {user_id}")
+    except Exception as e:
+        logger.exception(f"❌ render_menu ошибка: {e}")
+        try:
+            await target.answer(f"❌ Ошибка меню: {e}")
+        except Exception:
+            pass
 
 
 async def cmd_menu(message: Message):
