@@ -9,9 +9,8 @@ from sqlalchemy import select
 from keyboards.main_menu import main_menu_keyboard
 
 
-async def cmd_menu(message: Message):
-    user_id = message.from_user.id
-    
+async def show_menu(user_id: int, message: Message, edit: bool = False):
+    """Показать главное меню по ID пользователя."""
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
@@ -30,7 +29,15 @@ async def cmd_menu(message: Message):
         "Выбери раздел:"
     )
     
-    await message.answer(text, reply_markup=main_menu_keyboard())
+    if edit:
+        await message.edit_text(text, reply_markup=main_menu_keyboard())
+    else:
+        await message.answer(text, reply_markup=main_menu_keyboard())
+
+
+async def cmd_menu(message: Message):
+    """Обработчик команды /menu."""
+    await show_menu(message.from_user.id, message)
 
 
 async def menu_profile(callback: CallbackQuery):
