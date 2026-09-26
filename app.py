@@ -98,11 +98,11 @@ async def back_to_start(callback: types.CallbackQuery):
     )
     await callback.answer()
 
-
 @dp.callback_query(lambda c: c.data == "start_career")
 async def start_career(callback: types.CallbackQuery, state):
-    await registration.start_registration(callback.message, state)
+    await registration.start_registration(callback.from_user.id, callback.message, state)
     await callback.answer()
+
 
 
 @dp.callback_query(lambda c: c.data == "continue_game")
