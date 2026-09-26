@@ -9,14 +9,18 @@ from sqlalchemy import select
 from keyboards.main_menu import main_menu_keyboard
 
 
-async def show_menu(user_id: int, message: Message, edit: bool = False):
-    """Показать главное меню по ID пользователя."""
+async def render_menu(user_id: int, target, edit: bool = False):
+    """Показать меню. target — Message или callback.message."""
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
     
     if not user or not user.is_registered:
-        await message.answer("Сначала зарегистрируйся: /start")
+        text = "Сначала зарегистрируйся: /start"
+        if edit:
+            await target.edit_text(text)
+        else:
+            await target.answer(text)
         return
     
     text = (
@@ -30,14 +34,13 @@ async def show_menu(user_id: int, message: Message, edit: bool = False):
     )
     
     if edit:
-        await message.edit_text(text, reply_markup=main_menu_keyboard())
+        await target.edit_text(text, reply_markup=main_menu_keyboard())
     else:
-        await message.answer(text, reply_markup=main_menu_keyboard())
+        await target.answer(text, reply_markup=main_menu_keyboard())
 
 
 async def cmd_menu(message: Message):
-    """Обработчик команды /menu."""
-    await show_menu(message.from_user.id, message)
+    await render_menu(message.from_user.id, message)
 
 
 async def menu_profile(callback: CallbackQuery):
