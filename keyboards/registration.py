@@ -29,7 +29,7 @@ def club_keyboard():
     ])
 
 
-def def confirm_club_keyboard(club_key: str):
+def confirm_club_keyboard(club_key: str):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Да, играю", callback_data=f"confirm_club_{club_key}")],
         [InlineKeyboardButton(text="⬅️ Выбрать другой", callback_data="back_to_clubs")],
