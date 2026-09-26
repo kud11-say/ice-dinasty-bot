@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.client.default import DefaultBotProperties
 
 from config import BOT_TOKEN, ADMIN_ID
 from database import init_db
@@ -13,7 +14,7 @@ from handlers import registration, menu, collection, profile, team, packs, match
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=None))
 dp = Dispatcher(storage=MemoryStorage())
 
 
@@ -101,17 +102,23 @@ async def back_to_menu(callback: types.CallbackQuery):
     await callback.answer()
 
 
+async def generate_cards_background():
+    """Генерация карточек в фоне, чтобы не блокировать бота."""
+    try:
+        from services.card_generator import generate_cards_if_empty
+        count = await generate_cards_if_empty()
+        if count:
+            logger.info(f"✅ Сгенерировано карточек: {count}")
+        else:
+            logger.info("✅ Карточки уже в базе")
+    except Exception as e:
+        logger.error(f"⚠️ Ошибка генерации карточек: {e}")
+
+
 async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     await init_db()
     logger.info("✅ База данных готова.")
-
-    try:
-        from services.card_generator import generate_cards_if_empty
-        await generate_cards_if_empty()
-        logger.info("✅ База карточек готова.")
-    except Exception as e:
-        logger.error(f"⚠️ Ошибка генерации: {e}")
 
     registration.register_handlers(dp)
     menu.register_handlers(dp)
@@ -122,8 +129,12 @@ async def main():
     admin.register_handlers(dp)
 
     await bot.delete_webhook(drop_pending_updates=True)
-    logger.info("✅ Бот запущен.")
-    await dp.start_polling(bot)
+
+    # Запускаем генерацию карточек в фоне
+    asyncio.create_task(generate_cards_background())
+
+    logger.info("✅ Бот запущен. Ожидаю сообщения...")
+    await dp.start_polling(bot, polling_timeout=60)
 
 
 if __name__ == "__main__":
