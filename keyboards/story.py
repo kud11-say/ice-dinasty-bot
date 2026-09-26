@@ -9,7 +9,6 @@ def story_start_keyboard():
 
 
 def story_choice_keyboard(choices: list):
-    """choices = [(text, callback_data), ...]"""
     rows = [[InlineKeyboardButton(text=t, callback_data=cb)] for t, cb in choices]
     rows.append([InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
