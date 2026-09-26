@@ -75,10 +75,5 @@ async def menu_shop(callback: CallbackQuery):
     await show_packs(callback)
 
 
-async def menu_packs(callback: CallbackQuery):
-    from handlers.packs import show_packs
-    await show_packs(callback)
-
-
 async def menu_settings(callback: CallbackQuery):
     await callback.answer("⚙️ Скоро!", show_alert=True)
