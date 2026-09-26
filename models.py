@@ -4,42 +4,42 @@ from database import Base
 
 
 class User(Base):
-    """Игрок (ГМ)."""
     __tablename__ = "users"
-
-    id = Column(BigInteger, primary_key=True)  # Telegram ID
+    id = Column(BigInteger, primary_key=True)
     username = Column(String(64), nullable=True)
-    name = Column(String(32), nullable=True)  # Имя ГМ
+    name = Column(String(32), nullable=True)
     age = Column(Integer, default=25)
-    origin = Column(String(32), default="player")  # player/analyst/business/graduate/journalist/foreigner
+    origin = Column(String(32), default="player")
     club = Column(String(64), nullable=True)
-    league = Column(String(16), nullable=True)  # VHL/KHL/NHL
+    league = Column(String(16), nullable=True)
     level = Column(Integer, default=1)
     xp = Column(Integer, default=0)
     coins = Column(Integer, default=5000)
     rubies = Column(Integer, default=10)
     energy = Column(Integer, default=20)
     energy_bought = Column(Integer, default=0)
+    budget = Column(Integer, default=500000)
     rep_fans = Column(Integer, default=3)
     rep_press = Column(Integer, default=3)
     rep_players = Column(Integer, default=3)
     rep_board = Column(Integer, default=3)
     chapter = Column(Integer, default=1)
     day = Column(Integer, default=1)
+    wins = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    ot_wins = Column(Integer, default=0)
+    ot_losses = Column(Integer, default=0)
     is_registered = Column(Boolean, default=False)
     is_banned = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class Card(Base):
-    """Базовая карточка игрока (шаблон)."""
     __tablename__ = "cards"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(64), nullable=False)
-    position = Column(String(4), nullable=False)  # ЦН/ЛП/ПП/З/В
+    position = Column(String(4), nullable=False)
     age = Column(Integer, nullable=False)
     ovr = Column(Integer, nullable=False)
     speed = Column(Integer, default=50)
@@ -48,7 +48,7 @@ class Card(Base):
     defense = Column(Integer, default=50)
     physical = Column(Integer, default=50)
     goalie = Column(Integer, default=0)
-    rarity = Column(String(16), default="bronze")  # bronze/silver/gold/elite/legend/icon
+    rarity = Column(String(16), default="bronze")
     role = Column(String(32), default="universal")
     country = Column(String(32), default="Россия")
     league = Column(String(16), default="VHL")
@@ -58,77 +58,63 @@ class Card(Base):
 
 
 class UserCard(Base):
-    """Карточка, принадлежащая игроку."""
     __tablename__ = "user_cards"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     card_id = Column(Integer, ForeignKey("cards.id"), nullable=False)
     stars = Column(Integer, default=0)
-    form = Column(String(8), default="normal")  # hot/normal/cold
+    form = Column(String(8), default="normal")
     injury_matches = Column(Integer, default=0)
+    is_in_team = Column(Boolean, default=False)
+    slot = Column(String(16), nullable=True)
+    is_captain = Column(Boolean, default=False)
+    is_assistant = Column(Boolean, default=False)
     acquired_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class TeamSlot(Base):
-    """Слот в составе команды."""
-    __tablename__ = "team_slots"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
-    slot = Column(String(16), nullable=False)  # line1_c, line1_lw, pair1_ld, goalie1 ...
-    user_card_id = Column(Integer, ForeignKey("user_cards.id"), nullable=True)
-    is_captain = Column(Boolean, default=False)
-    is_assistant = Column(Boolean, default=False)
-
-
 class Match(Base):
-    """История матчей."""
     __tablename__ = "matches"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     opponent = Column(String(64), nullable=False)
     score_my = Column(Integer, default=0)
     score_opp = Column(Integer, default=0)
-    result = Column(String(16), default="")  # win/loss/ot/bull
+    result = Column(String(16), default="")
     is_playoff = Column(Boolean, default=False)
     best_player = Column(String(64), nullable=True)
     played_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Transaction(Base):
-    """Транзакции (монеты, рубины)."""
     __tablename__ = "transactions"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
-    type = Column(String(32), nullable=False)  # buy/sell/reward/donate
+    type = Column(String(32), nullable=False)
     amount = Column(Integer, default=0)
-    currency = Column(String(16), default="coins")  # coins/rubies
+    currency = Column(String(16), default="coins")
     description = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class StoryProgress(Base):
-    """Прогресс в сюжете."""
-    __tablename__ = "story_progress"
-
+class StoryFlag(Base):
+    __tablename__ = "story_flags"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, unique=True)
-    chapter = Column(Integer, default=1)
-    scene = Column(String(64), default="start")
-    flags = Column(Text, default="{}")  # JSON
-    choices = Column(Text, default="[]")  # JSON
+    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    flag_name = Column(String(64), nullable=False)
+    flag_value = Column(String(64), default="true")
 
 
-class AdminLog(Base):
-    """Логи действий админа."""
-    __tablename__ = "admin_logs"
-
+class SeasonTable(Base):
+    __tablename__ = "season_table"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    admin_id = Column(BigInteger, nullable=False)
-    action = Column(String(64), nullable=False)
-    target_id = Column(BigInteger, nullable=True)
-    details = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    user_id = Column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    club = Column(String(64), nullable=False)
+    games = Column(Integer, default=0)
+    wins = Column(Integer, default=0)
+    ot_wins = Column(Integer, default=0)
+    ot_losses = Column(Integer, default=0)
+    losses = Column(Integer, default=0)
+    points = Column(Integer, default=0)
+    goals_for = Column(Integer, default=0)
+    goals_against = Column(Integer, default=0)
+    is_player = Column(Boolean, default=False)
