@@ -4,7 +4,6 @@ from models import Card
 from sqlalchemy import select, func
 
 
-# 100 реальных игроков (топ-игроки КХЛ/НХЛ + капитаны)
 REAL_PLAYERS = [
     # НХЛ
     {"name": "Сидни Кросби", "pos": "ЦН", "age": 39, "ovr": 93, "country": "Канада", "league": "NHL", "club": "Питтсбург"},
@@ -47,7 +46,7 @@ REAL_PLAYERS = [
     {"name": "Иван Рябкин", "pos": "ЦН", "age": 19, "ovr": 79, "country": "Россия", "league": "KHL", "club": "Динамо Москва"},
     {"name": "Данис Зарипов", "pos": "ЛП", "age": 43, "ovr": 82, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
     {"name": "Александр Радулов", "pos": "ПП", "age": 39, "ovr": 85, "country": "Россия", "league": "KHL", "club": "Ак Барс"},
-    # ВХЛ (условные, но с реальными именами)
+    # ВХЛ
     {"name": "Сергей Морозов", "pos": "ЦН", "age": 44, "ovr": 80, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Алексей Кузнецов", "pos": "ЦН", "age": 30, "ovr": 78, "country": "Россия", "league": "VHL", "club": "Торос"},
     {"name": "Андрей Орлов", "pos": "З", "age": 28, "ovr": 77, "country": "Россия", "league": "VHL", "club": "Торос"},
@@ -62,17 +61,8 @@ REAL_PLAYERS = [
     {"name": "Егор Зайцев", "pos": "В", "age": 24, "ovr": 72, "country": "Россия", "league": "VHL", "club": "АКМ"},
 ]
 
-# Остальные 50 реальных — сгенерируем из базовых имён
-EXTRA_REAL = [
-    "Александр Петров", "Сергей Иванов", "Дмитрий Смирнов", "Андрей Кузнецов",
-    "Алексей Попов", "Николай Васильев", "Владимир Соколов", "Игорь Михайлов",
-    "Роман Новиков", "Павел Фёдоров", "Максим Морозов", "Артём Волков",
-    "Денис Лебедев", "Егор Семёнов", "Илья Егоров", "Кирилл Павлов",
-    "Матвей Козлов", "Тимофей Степанов", "Глеб Николаев", "Савелий Орлов",
-]
-
-FIRST_NAMES = ["Александр", "Сергей", "Дмитрий", "Андрей", "Алексей", "Николай", "Владимир", "Игорь", "Роман", "Павел", "Максим", "Артём", "Денис", "Егор", "Илья", "Кирилл", "Матвей", "Тимофей", "Глеб", "Савелий"]
-LAST_NAMES = ["Петров", "Иванов", "Смирнов", "Кузнецов", "Попов", "Васильев", "Соколов", "Михайлов", "Новиков", "Фёдоров", "Морозов", "Волков", "Лебедев", "Семёнов", "Егоров", "Павлов", "Козлов", "Степанов", "Николаев", "Орлов"]
+FIRST_NAMES = ["Александр", "Сергей", "Дмитрий", "Андрей", "Алексей", "Николай", "Владимир", "Игорь", "Роман", "Павел", "Максим", "Артём", "Денис", "Егор", "Илья", "Кирилл", "Матвей", "Тимофей", "Глеб", "Савелий", "Ярослав", "Михаил", "Иван", "Пётр", "Фёдор"]
+LAST_NAMES = ["Петров", "Иванов", "Смирнов", "Кузнецов", "Попов", "Васильев", "Соколов", "Михайлов", "Новиков", "Фёдоров", "Морозов", "Волков", "Лебедев", "Семёнов", "Егоров", "Павлов", "Козлов", "Степанов", "Николаев", "Орлов", "Зайцев", "Соловьёв", "Борисов", "Яковлев", "Григорьев"]
 COUNTRIES = ["Россия", "Россия", "Россия", "Канада", "США", "Швеция", "Финляндия", "Чехия", "Словакия"]
 POSITIONS = ["ЦН", "ЛП", "ПП", "З", "З", "В"]
 LEAGUES = ["VHL", "KHL", "NHL"]
@@ -84,7 +74,6 @@ CLUBS = {
 
 
 def calculate_stats(ovr: int, position: str) -> dict:
-    """Генерирует статы на основе OVR и позиции."""
     base = ovr - 10
     stats = {
         "speed": base + random.randint(-8, 8),
@@ -96,9 +85,9 @@ def calculate_stats(ovr: int, position: str) -> dict:
     }
     if position == "В":
         stats["goalie"] = ovr
-        stats["speed"] = ovr - 15
+        stats["speed"] = max(40, ovr - 15)
         stats["shot"] = 0
-        stats["pass_"] = ovr - 20
+        stats["pass_"] = max(30, ovr - 20)
     for k in stats:
         stats[k] = max(30, min(99, stats[k]))
     return stats
@@ -127,66 +116,26 @@ def determine_role(stats: dict, position: str) -> str:
 
 
 async def generate_cards_if_empty():
-    """Генерирует карточки, если база пуста."""
     async with async_session() as session:
         count = await session.scalar(select(func.count(Card.id)))
         if count and count > 0:
-            return  # Уже есть карточки
-        
+            return
+
         cards = []
-        
-        # 1. Реальные игроки (52 из списка)
+        # Реальные
         for p in REAL_PLAYERS:
             stats = calculate_stats(p["ovr"], p["pos"])
-            card = Card(
-                name=p["name"],
-                position=p["pos"],
-                age=p["age"],
-                ovr=p["ovr"],
-                speed=stats["speed"],
-                shot=stats["shot"],
-                pass_=stats["pass_"],
-                defense=stats["defense"],
-                physical=stats["physical"],
-                goalie=stats["goalie"],
-                rarity=determine_rarity(p["ovr"]),
-                role=determine_role(stats, p["pos"]),
-                country=p["country"],
-                league=p["league"],
-                club=p["club"],
+            cards.append(Card(
+                name=p["name"], position=p["pos"], age=p["age"], ovr=p["ovr"],
+                speed=stats["speed"], shot=stats["shot"], pass_=stats["pass_"],
+                defense=stats["defense"], physical=stats["physical"], goalie=stats["goalie"],
+                rarity=determine_rarity(p["ovr"]), role=determine_role(stats, p["pos"]),
+                country=p["country"], league=p["league"], club=p["club"],
                 potential=min(99, p["ovr"] + random.randint(0, 5)),
-            )
-            cards.append(card)
-        
-        # 2. Остальные реальные (из EXTRA_REAL + добавляем фамилии)
-        for i in range(48):
-            name = EXTRA_REAL[i % len(EXTRA_REAL)]
-            ovr = random.randint(70, 82)
-            pos = random.choice(POSITIONS)
-            league = random.choice(LEAGUES)
-            stats = calculate_stats(ovr, pos)
-            card = Card(
-                name=f"{name}",
-                position=pos,
-                age=random.randint(20, 34),
-                ovr=ovr,
-                speed=stats["speed"],
-                shot=stats["shot"],
-                pass_=stats["pass_"],
-                defense=stats["defense"],
-                physical=stats["physical"],
-                goalie=stats["goalie"],
-                rarity=determine_rarity(ovr),
-                role=determine_role(stats, pos),
-                country="Россия",
-                league=league,
-                club=random.choice(CLUBS[league]),
-                potential=min(99, ovr + random.randint(0, 8)),
-            )
-            cards.append(card)
-        
-        # 3. 200 сгенерированных
-        for i in range(200):
+            ))
+
+        # Сгенерированные
+        for i in range(260):
             first = random.choice(FIRST_NAMES)
             last = random.choice(LAST_NAMES)
             ovr = random.randint(55, 88)
@@ -194,25 +143,14 @@ async def generate_cards_if_empty():
             league = random.choice(LEAGUES)
             country = random.choice(COUNTRIES)
             stats = calculate_stats(ovr, pos)
-            card = Card(
-                name=f"{first} {last}",
-                position=pos,
-                age=random.randint(18, 36),
-                ovr=ovr,
-                speed=stats["speed"],
-                shot=stats["shot"],
-                pass_=stats["pass_"],
-                defense=stats["defense"],
-                physical=stats["physical"],
-                goalie=stats["goalie"],
-                rarity=determine_rarity(ovr),
-                role=determine_role(stats, pos),
-                country=country,
-                league=league,
-                club=random.choice(CLUBS[league]),
+            cards.append(Card(
+                name=f"{first} {last}", position=pos, age=random.randint(18, 36), ovr=ovr,
+                speed=stats["speed"], shot=stats["shot"], pass_=stats["pass_"],
+                defense=stats["defense"], physical=stats["physical"], goalie=stats["goalie"],
+                rarity=determine_rarity(ovr), role=determine_role(stats, pos),
+                country=country, league=league, club=random.choice(CLUBS[league]),
                 potential=min(99, ovr + random.randint(0, 10)),
-            )
-            cards.append(card)
-        
+            ))
+
         session.add_all(cards)
         await session.commit()
