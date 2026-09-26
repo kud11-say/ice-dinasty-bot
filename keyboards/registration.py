@@ -23,9 +23,9 @@ def origin_keyboard():
 
 def club_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏒 ТОРОС (Нефтекамск)", callback_data="club_toros")],
-        [InlineKeyboardButton(text="🏒 БУРАН (Воронеж)", callback_data="club_buran")],
-        [InlineKeyboardButton(text="🏒 АКМ (Тульская обл.)", callback_data="club_akm")],
+        [InlineKeyboardButton(text="🔴⚪ ТОРОС (Нефтекамск)", callback_data="club_toros")],
+        [InlineKeyboardButton(text="🔵⚪ БУРАН (Воронеж)", callback_data="club_buran")],
+        [InlineKeyboardButton(text="🔴⚫ АКМ (Тульская обл.)", callback_data="club_akm")],
     ])
 
 
