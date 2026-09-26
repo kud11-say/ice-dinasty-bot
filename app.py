@@ -144,8 +144,10 @@ async def main():
     except Exception as e:
         logger.error(f"⚠️ Ошибка генерации карточек: {e}")
     
-    registration.register_handlers(dp)
-    menu.register_handlers(dp)
+    from handlers import registration, menu, collection
+registration.register_handlers(dp)
+menu.register_handlers(dp)
+collection.register_handlers(dp)
     
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("✅ Бот запущен. Ожидаю сообщения...")
