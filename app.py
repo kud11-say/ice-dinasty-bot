@@ -8,7 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import BOT_TOKEN, ADMIN_ID
 from database import init_db
 
-from handlers import registration, menu, collection
+from handlers import registration, menu, collection, profile, admin
 
 logging.basicConfig(
     level=logging.INFO,
@@ -117,22 +117,6 @@ async def back_to_menu(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.message(Command("admin"))
-async def cmd_admin(message: Message):
-    if message.from_user.id != ADMIN_ID:
-        await message.answer("⛔ Нет доступа.")
-        return
-    await message.answer(
-        "🛡️ GOD MODE\n"
-        "─────────────────────\n\n"
-        "✅ Бот работает.\n"
-        "✅ Переменные загружены.\n"
-        "✅ Админ-доступ подтверждён.\n"
-        "✅ База данных подключена.\n\n"
-        f"Ваш ID: {message.from_user.id}"
-    )
-
-
 async def main():
     logger.info("🏒 Ice Dynasty Bot запускается...")
     logger.info(f"Админ ID: {ADMIN_ID}")
@@ -152,6 +136,7 @@ async def main():
     registration.register_handlers(dp)
     menu.register_handlers(dp)
     collection.register_handlers(dp)
+    admin.register_handlers(dp)
 
     await bot.delete_webhook(drop_pending_updates=True)
     logger.info("✅ Бот запущен. Ожидаю сообщения...")
