@@ -9,3 +9,11 @@ def packs_keyboard():
         [InlineKeyboardButton(text="💎 Элитный — 50 000", callback_data="pack_elite")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_menu")],
     ])
+
+
+def after_pack_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📦 Ещё пак", callback_data="menu_shop")],
+        [InlineKeyboardButton(text="🃏 В коллекцию", callback_data="menu_collection")],
+        [InlineKeyboardButton(text="⬅️ В меню", callback_data="back_to_menu")],
+    ])
