@@ -229,54 +229,38 @@ async def show_confirmation(message: Message, user_id: int, edit: bool = False):
     else:
         await message.answer(text, reply_markup=confirm_registration_keyboard())
 
+await session.commit()
 
-async def finish_registration(callback: CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    data = TEMP_DATA.get(user_id)
-    
-    if not data or "name" not in data or "club" not in data:
-        await callback.message.edit_text("⚠️ Что-то пошло не так. Начни заново: /start")
-        return
-    
-    club = CLUBS[data["club"]]
-    
-    async with async_session() as session:
-        result = await session.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-        
-        if not user:
-            user = User(id=user_id)
-            session.add(user)
-        
-        user.username = callback.from_user.username
-        user.name = data["name"]
-        user.age = data.get("age", 25)
-        user.origin = data.get("origin", "player")
-        user.club = club["name"]
-        user.league = club["league"]
-        user.is_registered = True
-        
-        await session.commit()
-    
-    await state.clear()
-    TEMP_DATA.pop(user_id, None)
-    
-    await callback.message.edit_text(
-        "🎬 КАБИНЕТ ДИРЕКТОРА\n"
-        "─────────────────────\n\n"
-        "Виктор Петрович Соколов смотрит "
-        "на тебя поверх очков.\n\n"
-        "«Итак. Ты — новый ГМ. Клуб в кризисе. "
-        "Бюджет — вот он. Состав — вот он.\n\n"
-        "Задача простая: выйти в плей-офф. "
-        "Или я найду другого ГМ.\n\n"
-        "Вопросы?»\n\n"
-        "─────────────────────\n"
-        "Онбординг продолжится в следующем обновлении.\n"
-        "А пока — поздравляем с регистрацией! 🎉\n\n"
-        "Напиши /menu, чтобы увидеть главное меню."
-    )
-    await callback.answer("Добро пожаловать в Ice Dynasty!")
+# Выдаём стартовый пак
+from services.card_service import give_starter_pack
+starter_cards = await give_starter_pack(user_id)
+
+await state.clear()
+TEMP_DATA.pop(user_id, None)
+
+# Формируем список карточек
+from handlers.collection import format_card_short
+cards_text = "\n".join([format_card_short(c) for c in starter_cards])
+
+await callback.message.edit_text(
+    "🎬 КАБИНЕТ ДИРЕКТОРА\n"
+    "─────────────────────\n\n"
+    "Виктор Петрович Соколов смотрит "
+    "на тебя поверх очков.\n\n"
+    "«Итак. Ты — новый ГМ. Клуб в кризисе. "
+    "Бюджет — вот он. Состав — вот он.\n\n"
+    "Задача простая: выйти в плей-офф. "
+    "Или я найду другого ГМ.\n\n"
+    "Держи стартовый набор — собери "
+    "что-нибудь из этого.»\n\n"
+    "─────────────────────\n"
+    "🎁 ТЫ ПОЛУЧИЛ СТАРТОВЫЙ ПАК:\n"
+    "─────────────────────\n"
+    f"{cards_text}\n\n"
+    "─────────────────────\n"
+    "Напиши /menu, чтобы увидеть главное меню."
+)
+await callback.answer("Добро пожаловать в Ice Dynasty!")
 
 
 async def restart_registration(callback: CallbackQuery, state: FSMContext):
