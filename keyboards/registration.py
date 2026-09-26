@@ -35,6 +35,7 @@ def confirm_club_keyboard(club_key: str):
         [InlineKeyboardButton(text="⬅️ Выбрать другой", callback_data="back_to_clubs")],
     ])
 
+
 def skip_slogan_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⏭ Пропустить", callback_data="skip_slogan")],
@@ -44,5 +45,4 @@ def skip_slogan_keyboard():
 def confirm_registration_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎬 Погнали!", callback_data="finish_registration")],
-        [InlineKeyboardButton(text="🔄 Начать заново", callback_data="restart_registration")],
     ])
