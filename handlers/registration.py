@@ -24,7 +24,6 @@ class Registration(StatesGroup):
     confirm = State()
 
 
-# Словарь для временного хранения данных регистрации (в реальном проекте — Redis, но для старта сойдёт)
 TEMP_DATA = {}
 
 ORIGINS = {
@@ -43,9 +42,15 @@ CLUBS = {
 }
 
 
-async def start_registration(message: Message, state: FSMContext):
-    """Начало регистрации. Вызывается из главного /start."""
-    user_id = message.from_user.id
+def get_data(user_id: int) -> dict:
+    """Безопасно получить данные регистрации."""
+    if user_id not in TEMP_DATA:
+        TEMP_DATA[user_id] = {}
+    return TEMP_DATA[user_id]
+
+
+async def start_registration(user_id: int, message: Message, state: FSMContext):
+    """Начало регистрации. Принимает ID пользователя явно."""
     
     # Проверяем, не зарегистрирован ли уже
     async with async_session() as session:
@@ -81,7 +86,7 @@ async def process_name(message: Message, state: FSMContext):
         return
     
     user_id = message.from_user.id
-    TEMP_DATA[user_id]["name"] = name
+    get_data(user_id)["name"] = name
     await state.set_state(Registration.age)
     
     await message.answer(
@@ -98,7 +103,7 @@ async def process_name(message: Message, state: FSMContext):
 async def process_age(callback: CallbackQuery, state: FSMContext):
     age = int(callback.data.split("_")[1])
     user_id = callback.from_user.id
-    TEMP_DATA[user_id]["age"] = age
+    get_data(user_id)["age"] = age
     await state.set_state(Registration.origin)
     
     await callback.message.edit_text(
@@ -114,7 +119,7 @@ async def process_age(callback: CallbackQuery, state: FSMContext):
 async def process_origin(callback: CallbackQuery, state: FSMContext):
     origin_key = callback.data.replace("origin_", "")
     user_id = callback.from_user.id
-    TEMP_DATA[user_id]["origin"] = origin_key
+    get_data(user_id)["origin"] = origin_key
     await state.set_state(Registration.club)
     
     await callback.message.edit_text(
@@ -139,7 +144,7 @@ async def process_club(callback: CallbackQuery, state: FSMContext):
     club_key = callback.data.replace("club_", "")
     club = CLUBS[club_key]
     user_id = callback.from_user.id
-    TEMP_DATA[user_id]["club"] = club_key
+    get_data(user_id)["club"] = club_key
     
     await callback.message.edit_text(
         f"✅ Ты выбрал «{club['name']}»\n"
@@ -183,27 +188,32 @@ async def confirm_club(callback: CallbackQuery, state: FSMContext):
 async def process_slogan(message: Message, state: FSMContext):
     slogan = message.text.strip()[:30]
     user_id = message.from_user.id
-    TEMP_DATA[user_id]["slogan"] = slogan
-    await show_confirmation(message, user_id)
+    get_data(user_id)["slogan"] = slogan
+    await show_confirmation(message, user_id, edit=False)
 
 
 async def skip_slogan(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
-    TEMP_DATA[user_id]["slogan"] = "Мы — одна команда"
+    get_data(user_id)["slogan"] = "Мы — одна команда"
     await show_confirmation(callback.message, user_id, edit=True)
     await callback.answer()
 
 
 async def show_confirmation(message: Message, user_id: int, edit: bool = False):
-    data = TEMP_DATA[user_id]
+    data = get_data(user_id)
+    
+    if "name" not in data or "club" not in data:
+        await message.answer("⚠️ Что-то пошло не так. Начни заново: /start")
+        return
+    
     club = CLUBS[data["club"]]
     
     text = (
         "🎉 РЕГИСТРАЦИЯ ЗАВЕРШЕНА\n"
         "─────────────────────\n\n"
         f"Имя: {data['name']}\n"
-        f"Возраст: {data['age']}\n"
-        f"Происхождение: {ORIGINS[data['origin']]}\n"
+        f"Возраст: {data.get('age', 25)}\n"
+        f"Происхождение: {ORIGINS.get(data.get('origin', 'player'))}\n"
         f"Клуб: {club['name']} ({club['city']})\n"
         f"Слоган: «{data['slogan']}»\n\n"
         "Стартовые бонусы:\n"
@@ -224,13 +234,12 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     data = TEMP_DATA.get(user_id)
     
-    if not data:
+    if not data or "name" not in data or "club" not in data:
         await callback.message.edit_text("⚠️ Что-то пошло не так. Начни заново: /start")
         return
     
     club = CLUBS[data["club"]]
     
-    # Создаём пользователя в БД
     async with async_session() as session:
         result = await session.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
@@ -241,8 +250,8 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
         
         user.username = callback.from_user.username
         user.name = data["name"]
-        user.age = data["age"]
-        user.origin = data["origin"]
+        user.age = data.get("age", 25)
+        user.origin = data.get("origin", "player")
         user.club = club["name"]
         user.league = club["league"]
         user.is_registered = True
@@ -264,7 +273,8 @@ async def finish_registration(callback: CallbackQuery, state: FSMContext):
         "Вопросы?»\n\n"
         "─────────────────────\n"
         "Онбординг продолжится в следующем обновлении.\n"
-        "А пока — поздравляем с регистрацией! 🎉"
+        "А пока — поздравляем с регистрацией! 🎉\n\n"
+        "Напиши /menu, чтобы увидеть главное меню."
     )
     await callback.answer("Добро пожаловать в Ice Dynasty!")
 
