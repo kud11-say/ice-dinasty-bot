@@ -48,14 +48,15 @@ async def show_matches(callback: CallbackQuery):
         return
 
     club_em = club_emoji(user.club)
+    line = "━━━━━━━━━━━━━━━━━━━━━━"
     text = (
         f"⚔️  МАТЧ\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{line}\n"
         f"{club_em}  «{user.club}»  ({user.league})\n\n"
         f"⚡ Энергия: {user.energy}/20\n"
         f"💰 Монеты: {user.coins}\n"
         f"🏆 В: {user.wins}  П: {user.losses}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{line}\n"
         f"Товарищеский матч против AI.\n"
         f"Стоимость: 3 ⚡  |  Награда: 500–1500 💰\n\n"
         f"Выбери тактику:"
@@ -96,7 +97,6 @@ async def play_match(callback: CallbackQuery, state: FSMContext):
 
         forwards = [t for t in team if t["card"].position in ["ЦН", "ЛП", "ПП"]]
         defense = [t for t in team if t["card"].position == "З"]
-        goalies = [t for t in team if t["card"].position == "В"]
 
         attack = sum(c["card"].shot + c["card"].pass_ for c in forwards) / max(len(forwards), 1) / 2
         defense_rating = sum(c["card"].defense for c in defense) / max(len(defense), 1) if defense else 50
@@ -150,6 +150,8 @@ async def play_match(callback: CallbackQuery, state: FSMContext):
         session.add(match)
         await session.commit()
         club = user.club
+        energy_left = user.energy
+        coins_total = user.coins
 
     club_em = club_emoji(club)
     line = "━━━━━━━━━━━━━━━━━━━━━━"
@@ -181,8 +183,8 @@ async def play_match(callback: CallbackQuery, state: FSMContext):
         f"xG:  {round(shots_my * 0.1, 2)}  vs  {round(shots_opp * 0.1, 2)}\n"
         f"Броски:  {shots_my}  vs  {shots_opp}\n"
         f"{line}\n"
-        f"💰  +{coins} монет\n"
-        f"⚡  Осталось: {user.energy}/20\n"
+        f"💰  +{coins} монет  (итого: {coins_total})\n"
+        f"⚡  Осталось: {energy_left}/20\n"
         f"{line}"
     )
 
