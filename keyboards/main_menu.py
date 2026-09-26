@@ -9,6 +9,6 @@ def main_menu_keyboard():
          InlineKeyboardButton(text="⚔️ Матчи", callback_data="menu_matches")],
         [InlineKeyboardButton(text="🏆 Сезон", callback_data="menu_season"),
          InlineKeyboardButton(text="🛒 Магазин", callback_data="menu_shop")],
-        [InlineKeyboardButton(text="👥 Социальное", callback_data="menu_social"),
+        [InlineKeyboardButton(text="📦 Открыть пак", callback_data="menu_packs"),
          InlineKeyboardButton(text="⚙️ Настройки", callback_data="menu_settings")],
     ])
